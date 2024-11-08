@@ -1,0 +1,39 @@
+import re
+from python_tokens import PYTHON_TOKENS as TOKENS
+
+expression = open("expression.txt", "r").read()
+template_content = open("template.html", "r").read()
+
+
+def scanner(expression, pos):
+    for token_type, pattern, description, style in TOKENS:
+        regex = re.compile(pattern)
+        match = regex.match(expression, pos)
+        if match:
+            return token_type, match.group(0), match.end(0), style
+
+    raise SyntaxError("Unknown expression: started on " + str(pos) + " position")
+
+
+lines_counter = 1
+column_counter = 1
+
+scanner_position = 0
+tokens_html = ''
+while scanner_position < len(expression):
+    try:
+        token_type, value, scanner_position, style = scanner(expression, scanner_position)
+        tokens_html += f"<span style=\"{style}\">" + value + "</span>"
+
+        if token_type == "NEWLINE":
+            lines_counter += 1
+            column_counter = 1
+        else:
+            column_counter += len(value)
+        print((token_type, value))
+    except SyntaxError:
+        tokens_html = f"<span style=\"color: red; font-weigh: bold;\">Syntax Error:\n    Scanner found unknown expression on {lines_counter} line, {column_counter} column</span>"
+        break ;
+
+with open("index.html", "w") as output_file:
+    output_file.write(template_content.replace("{{ code }}", tokens_html))
